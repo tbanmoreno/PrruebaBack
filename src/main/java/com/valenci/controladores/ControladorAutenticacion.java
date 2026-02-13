@@ -8,6 +8,7 @@ import com.valenci.entidades.Rol;
 import com.valenci.entidades.Usuario;
 import com.valenci.servicios.JwtService;
 import com.valenci.servicios.ServicioUsuario;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor // Sugerencia Senior: Reemplaza el constructor manual por esta anotación de Lombok
 public class ControladorAutenticacion {
 
     private final JwtService jwtService;
@@ -24,20 +26,9 @@ public class ControladorAutenticacion {
     private final UserDetailsService userDetailsService;
     private final ServicioUsuario servicioUsuario;
 
-    public ControladorAutenticacion(JwtService jwtService,
-                                    AuthenticationManager authenticationManager,
-                                    UserDetailsService userDetailsService,
-                                    ServicioUsuario servicioUsuario) {
-        this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
-        this.userDetailsService = userDetailsService;
-        this.servicioUsuario = servicioUsuario;
-    }
-
     // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<DtoRespuestaAutenticacion> iniciarSesion(@RequestBody DtoSolicitudAutenticacion authRequest) {
-        // Esto valida correo y contraseña contra la BD
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.getCorreo(),
@@ -45,8 +36,6 @@ public class ControladorAutenticacion {
                 )
         );
 
-        // Si la autenticación falla, Spring Security lanza una excepción antes de llegar aquí.
-        // Si llegamos aquí, cargamos el usuario y generamos el token.
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getCorreo());
         final String token = jwtService.generateToken(userDetails);
 
@@ -57,36 +46,25 @@ public class ControladorAutenticacion {
     @PostMapping("/register")
     public ResponseEntity<DtoRespuestaAutenticacion> registrar(@RequestBody DtoRegistroUsuario request) {
 
-        Usuario nuevoUsuario;
-
-        // 1. Instanciamos según el rol (Por ahora nos enfocamos en Cliente)
-        if ("CLIENTE".equalsIgnoreCase(request.getRol())) {
-            Cliente cliente = new Cliente();
-            // Aquí podrías agregar campos extra de cliente si el DTO los tuviera
-            nuevoUsuario = cliente;
-        } else {
-            nuevoUsuario = new Cliente();
-        }
+        // 1. Forzamos la creación de un Cliente (Registro público siempre es Cliente)
+        Cliente nuevoCliente = new Cliente();
 
         // 2. Llenamos los datos básicos
-        nuevoUsuario.setNombre(request.getNombre());
-        nuevoUsuario.setCorreo(request.getCorreo());
+        nuevoCliente.setNombre(request.getNombre());
+        nuevoCliente.setCorreo(request.getCorreo());
+        nuevoCliente.setContrasena(request.getContrasena()); // El servicio la encriptará
 
-        // OJO: Pasamos la contraseña PLANA. El servicio se encargará de encriptarla.
-        nuevoUsuario.setContrasena(request.getContrasena());
+        // 3. Mapeamos la dirección de envío (Campo que agregamos en el Register.jsx)
+        nuevoCliente.setDireccionEnvio(request.getDireccionEnvio());
 
-        // 3. Asignamos el Rol
-        try {
-            nuevoUsuario.setRol(Rol.valueOf(request.getRol().toUpperCase()));
-        } catch (Exception e) {
-            nuevoUsuario.setRol(Rol.CLIENTE); // Rol por defecto
-        }
+        // 4. Asignamos el Rol de forma segura
+        nuevoCliente.setRol(Rol.CLIENTE);
 
-        // 4. Guardamos usando el método correcto de la interfaz: REGISTRAR
-        servicioUsuario.registrar(nuevoUsuario);
+        // 5. Guardamos usando el método de la interfaz
+        servicioUsuario.registrar(nuevoCliente);
 
-        // 5. Generamos token y devolvemos
-        final String token = jwtService.generateToken(nuevoUsuario);
+        // 6. Generamos token de acceso inmediato
+        final String token = jwtService.generateToken(nuevoCliente);
 
         return ResponseEntity.ok(DtoRespuestaAutenticacion.builder().token(token).build());
     }

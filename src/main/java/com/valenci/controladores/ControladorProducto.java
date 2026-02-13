@@ -20,7 +20,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/productos")
-@RequiredArgsConstructor // Simplifica los constructores
+@RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class ControladorProducto {
 
@@ -29,8 +29,6 @@ public class ControladorProducto {
 
     @GetMapping
     public ResponseEntity<List<DtoRespuestaProducto>> listarTodos() {
-        // Sugerencia Senior: El mapeo debería ocurrir idealmente antes de cerrar la transacción
-        // o asegurar que el repositorio use un "JOIN FETCH"
         List<Producto> productos = servicioProducto.listarTodos();
         return ResponseEntity.ok(MapeadorProducto.aListaDto(productos));
     }
@@ -40,7 +38,6 @@ public class ControladorProducto {
     public ResponseEntity<DtoRespuestaProducto> crear(@Valid @RequestBody DtoSolicitudProducto dto) {
         Producto nuevoProducto = MapeadorProducto.aEntidad(dto);
 
-        // Mejora: Validación de tipo de usuario sin cast arriesgado
         var usuario = servicioUsuario.buscarPorId(dto.getIdProveedor())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proveedor no encontrado"));
 
@@ -54,13 +51,11 @@ public class ControladorProducto {
         return new ResponseEntity<>(MapeadorProducto.aDto(productoGuardado), HttpStatus.CREATED);
     }
 
-    // NUEVO: Método para actualizar (Necesario para tu Dashboard y Gestión)
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<DtoRespuestaProducto> actualizar(@PathVariable int id, @Valid @RequestBody DtoSolicitudProducto dto) {
         Producto datosNuevos = MapeadorProducto.aEntidad(dto);
 
-        // Buscamos el proveedor para el producto actualizado
         Proveedor proveedor = (Proveedor) servicioUsuario.buscarPorId(dto.getIdProveedor())
                 .filter(u -> u instanceof Proveedor)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Proveedor no válido"));
@@ -74,6 +69,7 @@ public class ControladorProducto {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<Void> eliminar(@PathVariable int id) {
+        // Usamos el método definido en tu interfaz de servicio
         servicioProducto.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }
@@ -84,9 +80,13 @@ public class ControladorProducto {
             @PathVariable int id,
             @RequestBody Map<String, Integer> body) {
 
+        if (!body.containsKey("cantidad")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Se requiere la propiedad 'cantidad'");
+        }
+
         int nuevaCantidad = body.get("cantidad");
         Producto producto = servicioProducto.buscarPorId(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no hallado"));
 
         producto.setCantidad(nuevaCantidad);
         Producto actualizado = servicioProducto.actualizar(id, producto);

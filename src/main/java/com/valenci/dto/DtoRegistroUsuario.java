@@ -13,5 +13,6 @@ public class DtoRegistroUsuario {
     private String nombre;
     private String correo;
     private String contrasena;
+    private String direccionEnvio;
     private String rol; // "CLIENTE", "PROVEEDOR", etc.
 }

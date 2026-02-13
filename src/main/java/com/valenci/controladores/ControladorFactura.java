@@ -24,7 +24,6 @@ public class ControladorFactura {
     @GetMapping
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<List<DtoRespuestaFactura>> listarTodas() {
-        // Obtenemos las entidades y transformamos a DTOs planos para React
         List<DtoRespuestaFactura> respuesta = servicioFactura.listarTodas().stream()
                 .map(MapeadorFactura::aDto)
                 .collect(Collectors.toList());
@@ -38,5 +37,16 @@ public class ControladorFactura {
                 .map(MapeadorFactura::aDto)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
+    }
+
+    // --- NUEVO MÉTODO PARA SOLUCIONAR EL ERROR 404 EN GESTIÓN DE PEDIDOS ---
+    @GetMapping("/pedido/{idPedido}")
+    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    public ResponseEntity<DtoRespuestaFactura> obtenerPorIdPedido(@PathVariable int idPedido) {
+        // Buscamos la factura asociada al ID del pedido
+        return servicioFactura.buscarPorIdPedido(idPedido)
+                .map(MapeadorFactura::aDto)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe factura para este pedido"));
     }
 }

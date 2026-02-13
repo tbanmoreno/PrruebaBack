@@ -83,8 +83,8 @@ public class ServicioPedidoImpl implements ServicioPedido {
         nuevoPago.setMetodoPago(metodoPago);
         repositorioPago.save(nuevoPago);
 
+        // Al registrar pago desde el cliente, se actualiza estado y se crea factura
         actualizarEstado(idPedido, EstadoPedido.PAGADO);
-        servicioFactura.crearFacturaParaPedido(pedido);
     }
 
     @Override
@@ -103,6 +103,13 @@ public class ServicioPedidoImpl implements ServicioPedido {
         pedido.setEstadoPedido(nuevoEstado);
         repositorioPedido.save(pedido);
         log.info("Pedido ID {} cambió de {} a {}", idPedido, estadoActual, nuevoEstado);
+
+        // MEJORA: Si el administrador cambia el estado a PAGADO, generamos la factura automáticamente
+        // Esto soluciona el error 404 en el Frontend al intentar descargar facturas de pedidos gestionados por el admin
+        if (nuevoEstado == EstadoPedido.PAGADO) {
+            log.info("Generando factura automática para pedido ID: {}", idPedido);
+            servicioFactura.crearFacturaParaPedido(pedido);
+        }
     }
 
     @Override
@@ -111,7 +118,6 @@ public class ServicioPedidoImpl implements ServicioPedido {
         Pedido pedido = repositorioPedido.findById(idPedido)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido no encontrado ID: " + idPedido));
 
-        // GUARDIA LÓGICA: Solo cancelar si no está ya cancelado o entregado
         if (pedido.getEstadoPedido() == EstadoPedido.CANCELADO) {
             throw new IllegalStateException("El pedido ya se encuentra cancelado.");
         }
@@ -120,10 +126,8 @@ public class ServicioPedidoImpl implements ServicioPedido {
             throw new IllegalStateException("No se puede cancelar un pedido que ya ha sido entregado al cliente.");
         }
 
-        // 1. Cambiar el estado
         pedido.setEstadoPedido(EstadoPedido.CANCELADO);
 
-        // 2. Devolver Stock de forma segura
         for (DetallePedido detalle : pedido.getDetalles()) {
             Producto p = detalle.getProducto();
             p.setCantidad(p.getCantidad() + detalle.getCantidad());
