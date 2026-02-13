@@ -38,7 +38,7 @@ public class Producto {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_proveedor")
-    private Proveedor proveedor;
+    private Usuario proveedor;
 
     // --- MÉTODOS SEGUROS PARA JPA ---
     // Sobrescribimos estos métodos para controlar exactamente qué campos se usan,
