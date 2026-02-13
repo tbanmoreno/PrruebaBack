@@ -3,6 +3,7 @@ package com.valenci.mapper;
 import com.valenci.dto.DtoRespuestaProducto;
 import com.valenci.dto.DtoSolicitudProducto;
 import com.valenci.entidades.Producto;
+import com.valenci.entidades.Proveedor;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -11,7 +12,6 @@ public class MapeadorProducto {
     public static Producto aEntidad(DtoSolicitudProducto dto) {
         if (dto == null) return null;
         Producto producto = new Producto();
-        // Sincronización de nombres de campo
         producto.setNombreProducto(dto.getNombre());
         producto.setPrecio(dto.getPrecio());
         producto.setCantidad(dto.getCantidad());
@@ -19,20 +19,19 @@ public class MapeadorProducto {
         return producto;
     }
 
-
     public static DtoRespuestaProducto aDto(Producto entidad) {
         if (entidad == null) return null;
 
         String nombreProv = "Sin proveedor";
 
-        // CORRECCIÓN: Verificación de persistencia para evitar LazyInitializationException
+        // Verificamos si existe el proveedor y si es una instancia de la clase Proveedor
         if (entidad.getProveedor() != null) {
-            try {
-                // Intentamos acceder al nombre; si la sesión está cerrada, esto lanzará el error
-                nombreProv = entidad.getProveedor().getNombreEmpresa();
-            } catch (Exception e) {
-                // Si falla, el DTO sigue vivo con "Sin proveedor" en lugar de dar Error 500
-                nombreProv = "Proveedor no disponible";
+            if (entidad.getProveedor() instanceof Proveedor) {
+                // Casting explícito para acceder al método getNombreEmpresa()
+                nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
+            } else {
+                // Si es un Usuario de otro tipo, usamos su nombre personal
+                nombreProv = entidad.getProveedor().getNombre();
             }
         }
 
@@ -47,6 +46,8 @@ public class MapeadorProducto {
     }
 
     public static List<DtoRespuestaProducto> aListaDto(List<Producto> entidades) {
-        return entidades.stream().map(MapeadorProducto::aDto).collect(Collectors.toList());
+        return entidades.stream()
+                .map(MapeadorProducto::aDto)
+                .collect(Collectors.toList());
     }
 }
