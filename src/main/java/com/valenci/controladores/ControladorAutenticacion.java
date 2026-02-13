@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@RequiredArgsConstructor // Sugerencia Senior: Reemplaza el constructor manual por esta anotación de Lombok
+@RequiredArgsConstructor
 public class ControladorAutenticacion {
 
     private final JwtService jwtService;
@@ -26,7 +26,6 @@ public class ControladorAutenticacion {
     private final UserDetailsService userDetailsService;
     private final ServicioUsuario servicioUsuario;
 
-    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<DtoRespuestaAutenticacion> iniciarSesion(@RequestBody DtoSolicitudAutenticacion authRequest) {
         authenticationManager.authenticate(
@@ -42,28 +41,21 @@ public class ControladorAutenticacion {
         return ResponseEntity.ok(DtoRespuestaAutenticacion.builder().token(token).build());
     }
 
-    // --- REGISTRO ---
     @PostMapping("/register")
     public ResponseEntity<DtoRespuestaAutenticacion> registrar(@RequestBody DtoRegistroUsuario request) {
 
-        // 1. Forzamos la creación de un Cliente (Registro público siempre es Cliente)
         Cliente nuevoCliente = new Cliente();
 
-        // 2. Llenamos los datos básicos
         nuevoCliente.setNombre(request.getNombre());
         nuevoCliente.setCorreo(request.getCorreo());
-        nuevoCliente.setContrasena(request.getContrasena()); // El servicio la encriptará
-
-        // 3. Mapeamos la dirección de envío (Campo que agregamos en el Register.jsx)
+        nuevoCliente.setContrasena(request.getContrasena());
         nuevoCliente.setDireccionEnvio(request.getDireccionEnvio());
 
-        // 4. Asignamos el Rol de forma segura
-        nuevoCliente.setRol(Rol.CLIENTE);
+        // CORRECCIÓN: Convertimos el Enum Rol a String para que coincida con la entidad Usuario
+        nuevoCliente.setRol(Rol.CLIENTE.name());
 
-        // 5. Guardamos usando el método de la interfaz
         servicioUsuario.registrar(nuevoCliente);
 
-        // 6. Generamos token de acceso inmediato
         final String token = jwtService.generateToken(nuevoCliente);
 
         return ResponseEntity.ok(DtoRespuestaAutenticacion.builder().token(token).build());
