@@ -1,7 +1,7 @@
 package com.valenci.config;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value; // Importante
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,7 +28,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
-    // Inyectamos la variable definida en application.properties
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
@@ -38,13 +37,16 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
+                        // Permitimos autenticación, registro y errores sin token
                         .requestMatchers("/api/auth/**", "/error").permitAll()
+
+                        // Permitimos ver productos a cualquier usuario
                         .requestMatchers(HttpMethod.GET, "/api/productos/**").permitAll()
 
-                        // REFUERZO: Pedidos para Clientes
+                        // Clientes pueden crear pedidos
                         .requestMatchers(HttpMethod.POST, "/api/pedidos/**").hasAuthority("CLIENTE")
 
-                        // Rutas administrativas
+                        // Rutas administrativas protegidas
                         .requestMatchers("/api/admin/**").hasAuthority("ADMINISTRADOR")
                         .requestMatchers("/api/pedidos/**").hasAuthority("ADMINISTRADOR")
                         .requestMatchers("/api/facturas/**").hasAuthority("ADMINISTRADOR")
@@ -65,11 +67,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        // Convertimos la cadena separada por comas en una lista
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
         configuration.setAllowedOrigins(origins);
-
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
         configuration.setAllowCredentials(true);
