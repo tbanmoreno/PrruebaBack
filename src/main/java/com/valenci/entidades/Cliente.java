@@ -1,6 +1,7 @@
 package com.valenci.entidades;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
@@ -16,13 +17,15 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+// Blindaje contra proxies de Hibernate para evitar errores 500 en Render
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Cliente extends Usuario {
 
     @Column(name = "direccion_envio")
     private String direccionEnvio;
 
-    // SOLUCIÓN AL ERROR: Añadimos la relación inversa para el historial
-    // Usamos JsonIgnore para evitar que al cargar un cliente se carguen infinitamente sus pedidos en JSON simple
+    // Relación inversa para el historial de compras
+    // @JsonIgnore es vital aquí: corta la recursión si se consulta el cliente directamente
     @OneToMany(mappedBy = "cliente")
     @JsonIgnore
     private List<Pedido> pedidos;

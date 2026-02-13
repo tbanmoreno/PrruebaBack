@@ -1,6 +1,5 @@
 package com.valenci.dto;
 
-import com.valenci.entidades.EstadoPedido;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,8 +10,7 @@ public class DtoPedidoHistorial {
     private int idPedido;
     private LocalDateTime fechaPedido;
     private BigDecimal totalPedido;
-    // CORRECCIÓN: Cambiado a String para consistencia en las respuestas JSON
-    private String estadoPedido;
+    private String estadoPedido; // String para consistencia JSON
     private DtoResumenFactura factura;
     private List<DtoRespuestaDetallePedido> detalles;
 }
