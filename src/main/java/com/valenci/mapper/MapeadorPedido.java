@@ -21,21 +21,20 @@ public class MapeadorPedido {
         dto.setFechaPedido(pedido.getFechaPedido());
         dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name() : "PENDIENTE");
 
+        // Verificación segura del cliente
         if (pedido.getCliente() != null) {
             dto.setNombreCliente(pedido.getCliente().getNombre());
         } else {
-            dto.setNombreCliente("Cliente no identificado");
+            dto.setNombreCliente("Cliente no disponible");
         }
 
-        dto.setTotalPedido(pedido.getTotalPedido());
+        dto.setTotalPedido(pedido.getTotalPedido() != null ? pedido.getTotalPedido() : java.math.BigDecimal.ZERO);
 
-        if (pedido.getDetalles() != null) {
-            dto.setDetalles(pedido.getDetalles().stream()
-                    .map(MapeadorPedido::aDtoRespuestaDetalle)
-                    .collect(Collectors.toList()));
-        } else {
-            dto.setDetalles(Collections.emptyList());
-        }
+        // Verificación segura de detalles
+        dto.setDetalles(pedido.getDetalles() != null ?
+                pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
+                Collections.emptyList());
+
         return dto;
     }
 

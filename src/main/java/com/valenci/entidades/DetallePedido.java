@@ -1,5 +1,6 @@
 package com.valenci.entidades;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -27,6 +28,7 @@ public class DetallePedido {
     @ManyToOne
     @JoinColumn(name = "id_pedido")
     @ToString.Exclude
+    @JsonIgnore
     private Pedido pedido;
 
     @ManyToOne
