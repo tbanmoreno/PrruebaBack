@@ -9,11 +9,11 @@ import java.util.Map;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor // Necesario para la serialización de Jackson
+@NoArgsConstructor
 public class DtoDashboardResumen {
     private BigDecimal ventasTotales;
     private long totalPedidos;
     private Map<String, Long> pedidosPorEstado;
     private List<DtoRespuestaProducto> productosStockCritico;
-    private List<Map<String, Object>> topProductos;
+    private List<DtoTopProducto> topProductos; // Lista coherente y tipada
 }

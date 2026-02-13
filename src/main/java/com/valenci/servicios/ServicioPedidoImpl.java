@@ -37,26 +37,29 @@ public class ServicioPedidoImpl implements ServicioPedido {
     @Override
     @Transactional
     public Pedido crear(Pedido pedido) {
-        log.info("Creando pedido para cliente ID: {}", pedido.getCliente().getId());
+        log.info("Iniciando persistencia de pedido Valenci...");
         BigDecimal totalGeneral = BigDecimal.ZERO;
 
-        for (DetallePedido detalle : pedido.getDetalles()) {
-            Producto productoEnDB = repositorioProducto.findById(detalle.getProducto().getIdProducto())
-                    .orElseThrow(() -> new IllegalArgumentException("Producto ID " + detalle.getProducto().getIdProducto() + " no existe."));
+        if (pedido.getDetalles() != null) {
+            for (DetallePedido detalle : pedido.getDetalles()) {
+                Producto productoEnDB = repositorioProducto.findById(detalle.getProducto().getIdProducto())
+                        .orElseThrow(() -> new IllegalArgumentException("Producto no hallado."));
 
-            if (productoEnDB.getCantidad() < detalle.getCantidad()) {
-                throw new IllegalStateException("Stock insuficiente para: " + productoEnDB.getNombreProducto());
+                if (productoEnDB.getCantidad() < detalle.getCantidad()) {
+                    throw new IllegalStateException("Stock insuficiente: " + productoEnDB.getNombreProducto());
+                }
+
+                detalle.setPrecioUnitario(productoEnDB.getPrecio());
+                BigDecimal subtotal = productoEnDB.getPrecio().multiply(BigDecimal.valueOf(detalle.getCantidad()));
+                detalle.setSubtotal(subtotal);
+                totalGeneral = totalGeneral.add(subtotal);
+
+                productoEnDB.setCantidad(productoEnDB.getCantidad() - detalle.getCantidad());
+                repositorioProducto.save(productoEnDB);
+
+                // Crucial para @JsonManagedReference y coherencia JPA
+                detalle.setPedido(pedido);
             }
-
-            detalle.setPrecioUnitario(productoEnDB.getPrecio());
-            BigDecimal subtotal = productoEnDB.getPrecio().multiply(BigDecimal.valueOf(detalle.getCantidad()));
-            detalle.setSubtotal(subtotal);
-            totalGeneral = totalGeneral.add(subtotal);
-
-            productoEnDB.setCantidad(productoEnDB.getCantidad() - detalle.getCantidad());
-            repositorioProducto.save(productoEnDB);
-
-            detalle.setPedido(pedido);
         }
 
         pedido.setTotalPedido(totalGeneral);

@@ -21,14 +21,10 @@ public class Pedido {
     @Column(name = "id_pedido")
     private int idPedido;
 
-    @Column(name = "fecha_pedido")
     private LocalDateTime fechaPedido;
-
-    @Column(name = "total_pedido")
     private BigDecimal totalPedido;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado_pedido")
     private EstadoPedido estadoPedido;
 
     @ManyToOne(fetch = FetchType.LAZY)

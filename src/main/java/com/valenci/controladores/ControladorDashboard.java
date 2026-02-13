@@ -1,8 +1,10 @@
 package com.valenci.controladores;
 
 import com.valenci.dto.DtoDashboardResumen;
+import com.valenci.dto.DtoTopProducto;
 import com.valenci.entidades.EstadoPedido;
 import com.valenci.entidades.Pedido;
+import com.valenci.entidades.DetallePedido;
 import com.valenci.mapper.MapeadorProducto;
 import com.valenci.servicios.ServicioPedido;
 import com.valenci.servicios.ServicioProducto;
@@ -31,13 +33,10 @@ public class ControladorDashboard {
     @GetMapping("/resumen")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<DtoDashboardResumen> obtenerResumen() {
-        // 1. Obtener pedidos con manejo de nulos
         List<Pedido> pedidos = servicioPedido.listarTodos();
-        if (pedidos == null) {
-            pedidos = new ArrayList<>();
-        }
+        if (pedidos == null) pedidos = new ArrayList<>();
 
-        // 2. Calcular Ventas Totales (Seguro contra nulos en totalPedido)
+        // 1. Calcular Ventas Totales
         BigDecimal ventasTotales = pedidos.stream()
                 .filter(p -> p.getEstadoPedido() != null &&
                         p.getEstadoPedido() != EstadoPedido.PENDIENTE &&
@@ -45,12 +44,27 @@ public class ControladorDashboard {
                 .map(p -> p.getTotalPedido() != null ? p.getTotalPedido() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 3. Conteo de pedidos por estado
+        // 2. Conteo de pedidos por estado
         Map<String, Long> pedidosPorEstado = pedidos.stream()
                 .filter(p -> p.getEstadoPedido() != null)
                 .collect(Collectors.groupingBy(p -> p.getEstadoPedido().name(), Collectors.counting()));
 
-        // 4. Stock Crítico (Umbral de 15 unidades)
+        // 3. Lógica para Top Productos (Agrupación y Ordenación)
+        List<DtoTopProducto> topProductos = pedidos.stream()
+                .filter(p -> p.getEstadoPedido() != EstadoPedido.CANCELADO)
+                .flatMap(p -> p.getDetalles() != null ? p.getDetalles().stream() : java.util.stream.Stream.empty())
+                .filter(d -> d.getProducto() != null)
+                .collect(Collectors.groupingBy(
+                        d -> d.getProducto().getNombreProducto(),
+                        Collectors.summingLong(DetallePedido::getCantidad)
+                ))
+                .entrySet().stream()
+                .map(entry -> new DtoTopProducto(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> Long.compare(b.getCantidadVendida(), a.getCantidadVendida()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        // 4. Stock Crítico
         var productos = servicioProducto.listarTodos();
         var stockCritico = (productos == null) ? new ArrayList<com.valenci.dto.DtoRespuestaProducto>() :
                 productos.stream()
@@ -58,15 +72,12 @@ public class ControladorDashboard {
                         .map(MapeadorProducto::aDto)
                         .collect(Collectors.toList());
 
-        // 5. Construcción de respuesta garantizando que no haya nulos en las colecciones
-        DtoDashboardResumen resumen = new DtoDashboardResumen(
+        return ResponseEntity.ok(new DtoDashboardResumen(
                 ventasTotales,
                 (long) pedidos.size(),
                 pedidosPorEstado.isEmpty() ? new HashMap<>() : pedidosPorEstado,
                 stockCritico,
-                new ArrayList<>() // Top Productos inicializado vacío
-        );
-
-        return ResponseEntity.ok(resumen);
+                topProductos
+        ));
     }
 }
