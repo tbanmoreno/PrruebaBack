@@ -1,20 +1,17 @@
 package com.valenci.entidades;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "detalle_pedido")
-@Getter
-@Setter
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class DetallePedido {
 
     @Id
@@ -22,19 +19,13 @@ public class DetallePedido {
     @Column(name = "id_detalle_pedido")
     private int idDetallePedido;
 
-    @Column(name = "cantidad")
     private int cantidad;
-
-    @Column(name = "precio_unitario")
     private BigDecimal precioUnitario;
-
-    @Column(name = "subtotal")
     private BigDecimal subtotal;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pedido")
-    @ToString.Exclude
-    @JsonBackReference // Evita que el detalle intente serializar al pedido de vuelta
+    @JsonBackReference
     private Pedido pedido;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,13 +1,17 @@
 package com.valenci.entidades;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "pagos")
-@Data
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Pago {
 
     @Id
@@ -15,8 +19,10 @@ public class Pago {
     @Column(name = "id_pago")
     private int idPago;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pedido")
+    // Al listar pagos, ignoramos los detalles del pedido y al cliente para evitar sobrecarga
+    @JsonIgnoreProperties({"detalles", "cliente"})
     private Pedido pedido;
 
     @Column(name = "monto")

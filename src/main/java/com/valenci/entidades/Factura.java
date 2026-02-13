@@ -1,13 +1,17 @@
 package com.valenci.entidades;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "facturas")
-@Data
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Factura {
 
     @Id
@@ -15,8 +19,11 @@ public class Factura {
     @Column(name = "id_factura")
     private int idFactura;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_pedido")
+    // Evitamos la recursión: al serializar la factura, no necesitamos
+    // que el pedido intente cargar de nuevo la factura o sus detalles pesados
+    @JsonIgnoreProperties("detalles")
     private Pedido pedido;
 
     @Column(name = "fecha_factura")
