@@ -4,6 +4,7 @@ import com.valenci.dto.DtoRespuestaProducto;
 import com.valenci.dto.DtoSolicitudProducto;
 import com.valenci.entidades.Producto;
 import com.valenci.entidades.Proveedor;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,14 +25,16 @@ public class MapeadorProducto {
 
         String nombreProv = "Sin proveedor";
 
-        // Verificamos si existe el proveedor y si es una instancia de la clase Proveedor
+        // Lógica de casting seguro para evitar errores de compilación y ejecución
         if (entidad.getProveedor() != null) {
-            if (entidad.getProveedor() instanceof Proveedor) {
-                // Casting explícito para acceder al método getNombreEmpresa()
-                nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
-            } else {
-                // Si es un Usuario de otro tipo, usamos su nombre personal
-                nombreProv = entidad.getProveedor().getNombre();
+            try {
+                if (entidad.getProveedor() instanceof Proveedor) {
+                    nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
+                } else {
+                    nombreProv = entidad.getProveedor().getNombre();
+                }
+            } catch (Exception e) {
+                nombreProv = "Error de carga";
             }
         }
 
@@ -41,11 +44,12 @@ public class MapeadorProducto {
                 entidad.getDescripcion(),
                 entidad.getPrecio(),
                 entidad.getCantidad(),
-                nombreProv
+                nombreProv != null ? nombreProv : "Nombre no disponible"
         );
     }
 
     public static List<DtoRespuestaProducto> aListaDto(List<Producto> entidades) {
+        if (entidades == null) return new ArrayList<>();
         return entidades.stream()
                 .map(MapeadorProducto::aDto)
                 .collect(Collectors.toList());
