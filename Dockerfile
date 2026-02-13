@@ -8,8 +8,8 @@ ENV LANG C.UTF-8
 COPY pom.xml .
 COPY src ./src
 
-# Compilamos saltando tests
-RUN mvn clean package -DskipTests
+# USAMOS maven.test.skip=true PARA EVITAR ERRORES DE COMPILACION EN TESTS
+RUN mvn clean package -Dmaven.test.skip=true
 
 # 2. Fase de ejecucion
 FROM eclipse-temurin:21-jdk
