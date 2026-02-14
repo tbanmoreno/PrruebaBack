@@ -12,26 +12,17 @@ import java.util.Optional;
 @Repository
 public interface RepositorioFactura extends JpaRepository<Factura, Integer> {
 
-    /**
-     * Busca una factura por su ID, trayendo también el Pedido y el Cliente asociados.
-     */
     @Query("SELECT f FROM Factura f JOIN FETCH f.pedido p JOIN FETCH p.cliente WHERE f.idFactura = :id")
     @Override
     Optional<Factura> findById(@Param("id") Integer id);
 
-    /**
-     * Busca todas las facturas, trayendo también el Pedido y el Cliente de cada una.
-     */
-    @Query("SELECT f FROM Factura f JOIN FETCH f.pedido p JOIN FETCH p.cliente")
+    @Query("SELECT DISTINCT f FROM Factura f JOIN FETCH f.pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto")
     @Override
     List<Factura> findAll();
 
-    // La ruta es: Factura -> pedido -> idPedido
-    Optional<Factura> findByPedidoIdPedido(int idPedido);
+    @Query("SELECT f FROM Factura f JOIN FETCH f.pedido p JOIN FETCH p.cliente WHERE p.idPedido = :idPedido")
+    Optional<Factura> findByPedidoIdPedido(@Param("idPedido") int idPedido);
 
-    /**
-     * Busca todas las facturas de un cliente específico, trayendo también el Pedido asociado.
-     */
-    @Query("SELECT f FROM Factura f JOIN FETCH f.pedido p WHERE p.cliente.id = :idCliente")
+    @Query("SELECT f FROM Factura f JOIN FETCH f.pedido p JOIN FETCH p.cliente WHERE p.cliente.id = :idCliente")
     List<Factura> findByPedidoClienteId(@Param("idCliente") int idCliente);
 }

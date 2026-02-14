@@ -15,22 +15,26 @@ import java.util.Optional;
 @Repository
 public interface RepositorioPedido extends JpaRepository<Pedido, Integer> {
 
-    List<Pedido> findByEstadoPedido(EstadoPedido estado);
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE p.estadoPedido = :estado")
+    List<Pedido> findByEstadoPedido(@Param("estado") EstadoPedido estado);
 
-    // NUEVO: Para contar pedidos que requieren atención inmediata
     long countByEstadoPedido(EstadoPedido estado);
 
-    @Query("SELECT p FROM Pedido p WHERE DATE(p.fechaPedido) = :fecha")
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE DATE(p.fechaPedido) = :fecha")
     List<Pedido> findByFecha(@Param("fecha") LocalDate fecha);
 
-    @Query("SELECT p FROM Pedido p JOIN p.detalles d WHERE d.producto.id = :idProducto")
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN FETCH p.cliente JOIN p.detalles d WHERE d.producto.idProducto = :idProducto")
     List<Pedido> findByProductoId(@Param("idProducto") int idProducto);
 
-    @Query("SELECT p FROM Pedido p JOIN FETCH p.cliente WHERE p.idPedido = :id")
+    @Query("SELECT p FROM Pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE p.idPedido = :id")
     @Override
     Optional<Pedido> findById(@Param("id") Integer id);
 
-    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE p.cliente.id = :idCliente")
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto")
+    @Override
+    List<Pedido> findAll();
+
+    @Query("SELECT DISTINCT p FROM Pedido p JOIN FETCH p.cliente LEFT JOIN FETCH p.detalles d LEFT JOIN FETCH d.producto WHERE p.cliente.id = :idCliente")
     List<Pedido> findAllByClienteIdWithDetalles(@Param("idCliente") int idCliente);
 
     @Query("""

@@ -18,22 +18,31 @@ public class MapeadorFactura {
         dto.setTotal(entidad.getTotalFactura() != null ? entidad.getTotalFactura() : BigDecimal.ZERO);
         dto.setIva(entidad.getIva() != null ? entidad.getIva() : BigDecimal.ZERO);
 
-        // Extraemos datos del cliente de forma segura (Safe-Navigation)
-        if (entidad.getPedido() != null && entidad.getPedido().getCliente() != null) {
-            dto.setNombreCliente(entidad.getPedido().getCliente().getNombre());
-            dto.setCorreoCliente(entidad.getPedido().getCliente().getCorreo());
+        // Blindaje de navegación segura para Pedido y Cliente
+        if (entidad.getPedido() != null) {
+            try {
+                if (entidad.getPedido().getCliente() != null) {
+                    dto.setNombreCliente(entidad.getPedido().getCliente().getNombre());
+                    dto.setCorreoCliente(entidad.getPedido().getCliente().getCorreo());
+                } else {
+                    dto.setNombreCliente("Cliente no asignado");
+                    dto.setCorreoCliente("N/A");
+                }
 
-            // Mapeamos los detalles del pedido si existen
-            if (entidad.getPedido().getDetalles() != null) {
-                dto.setDetalles(entidad.getPedido().getDetalles().stream()
-                        .map(MapeadorPedido::aDtoRespuestaDetalle)
-                        .collect(Collectors.toList()));
-            } else {
+                if (entidad.getPedido().getDetalles() != null) {
+                    dto.setDetalles(entidad.getPedido().getDetalles().stream()
+                            .map(MapeadorPedido::aDtoRespuestaDetalle)
+                            .collect(Collectors.toList()));
+                } else {
+                    dto.setDetalles(new ArrayList<>());
+                }
+            } catch (Exception e) {
+                // Si ocurre un error de Lazy loading, enviamos datos mínimos en lugar de Error 500
+                dto.setNombreCliente("Error al cargar cliente");
                 dto.setDetalles(new ArrayList<>());
             }
         } else {
-            dto.setNombreCliente("Cliente No Identificado");
-            dto.setCorreoCliente("N/A");
+            dto.setNombreCliente("Factura sin pedido");
             dto.setDetalles(new ArrayList<>());
         }
 
