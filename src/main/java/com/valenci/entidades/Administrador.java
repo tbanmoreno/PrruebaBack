@@ -2,18 +2,18 @@ package com.valenci.entidades;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @DiscriminatorValue("ADMINISTRADOR")
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 @NoArgsConstructor
 public class Administrador extends Usuario {
-
-    public Administrador(int id, String nombre, String correo, String contrasena) {
-        super(id, nombre, correo, contrasena, null);
+    // Constructor limpio: el ID y el Rol son gestionados por JPA automáticamente
+    public Administrador(String nombre, String correo, String contrasena) {
+        super(nombre, correo, contrasena);
     }
 }

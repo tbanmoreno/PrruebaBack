@@ -39,6 +39,7 @@ public abstract class Usuario implements UserDetails {
     @Column(name = "rol", insertable = false, updatable = false)
     private String rol;
 
+    // Constructor unificado para herencia
     protected Usuario(String nombre, String correo, String contrasena) {
         this.nombre = nombre;
         this.correo = correo;
@@ -52,25 +53,13 @@ public abstract class Usuario implements UserDetails {
             DiscriminatorValue val = this.getClass().getAnnotation(DiscriminatorValue.class);
             nombreRol = (val != null) ? val.value() : "INVITADO";
         }
-        // Usamos el rol directamente para coincidir con .hasAuthority() en SecurityConfig
         return List.of(new SimpleGrantedAuthority(nombreRol));
     }
 
-    @Override
-    public String getPassword() { return this.contrasena; }
-
-    @Override
-    public String getUsername() { return this.correo; }
-
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-
-    @Override
-    public boolean isAccountNonLocked() { return true; }
-
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return true; }
+    @Override public String getPassword() { return this.contrasena; }
+    @Override public String getUsername() { return this.correo; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }
