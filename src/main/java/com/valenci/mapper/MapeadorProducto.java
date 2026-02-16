@@ -17,6 +17,8 @@ public class MapeadorProducto {
         producto.setPrecio(dto.getPrecio());
         producto.setCantidad(dto.getCantidad());
         producto.setDescripcion(dto.getDescripcion());
+        // La imagen se setea manualmente en el controlador tras la conversión si fuera necesario,
+        // o directamente si el DTO de solicitud ya la trae en Base64.
         return producto;
     }
 
@@ -25,7 +27,6 @@ public class MapeadorProducto {
 
         String nombreProv = "Sin proveedor";
 
-        // Lógica de casting seguro para evitar errores de compilación y ejecución
         if (entidad.getProveedor() != null) {
             try {
                 if (entidad.getProveedor() instanceof Proveedor) {
@@ -38,13 +39,15 @@ public class MapeadorProducto {
             }
         }
 
+        // Retornamos el DTO incluyendo el nuevo campo 'imagen'
         return new DtoRespuestaProducto(
                 entidad.getIdProducto(),
                 entidad.getNombreProducto(),
                 entidad.getDescripcion(),
                 entidad.getPrecio(),
                 entidad.getCantidad(),
-                nombreProv != null ? nombreProv : "Nombre no disponible"
+                nombreProv,
+                entidad.getImagen() // <-- CRUCIAL: Pasamos el String Base64 al Frontend
         );
     }
 

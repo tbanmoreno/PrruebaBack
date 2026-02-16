@@ -11,8 +11,6 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "productos")
-// --- CORRECCIÓN CRÍTICA ---
-// Reemplazamos @Data por anotaciones específicas para evitar problemas con Lazy Loading.
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,7 +25,7 @@ public class Producto {
     @Column(name = "nombre_producto")
     private String nombreProducto;
 
-    @Column(name = "descripcion")
+    @Column(name = "descripcion", length = 1000)
     private String descripcion;
 
     @Column(name = "precio")
@@ -36,21 +34,20 @@ public class Producto {
     @Column(name = "cantidad")
     private int cantidad;
 
+    // Usamos LONGTEXT para almacenar el String Base64 de la imagen
+    @Lob
+    @Column(name = "imagen", columnDefinition = "LONGTEXT")
+    private String imagen;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_proveedor")
     private Usuario proveedor;
-
-    // --- MÉTODOS SEGUROS PARA JPA ---
-    // Sobrescribimos estos métodos para controlar exactamente qué campos se usan,
-    // evitando así que se dispare la carga perezosa de 'proveedor' de forma inesperada.
 
     @Override
     public String toString() {
         return "Producto{" +
                 "idProducto=" + idProducto +
                 ", nombreProducto='" + nombreProducto + '\'' +
-                ", precio=" + precio +
-                ", cantidad=" + cantidad +
                 '}';
     }
 

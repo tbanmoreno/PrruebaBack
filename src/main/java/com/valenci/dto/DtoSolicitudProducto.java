@@ -23,4 +23,6 @@ public class DtoSolicitudProducto {
 
     @NotNull(message = "El ID del proveedor es obligatorio")
     private int idProveedor;
+
+    private String imagen;
 }
