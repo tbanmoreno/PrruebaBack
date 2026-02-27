@@ -46,6 +46,9 @@ public class ServicioProductoImpl implements ServicioProducto {
         productoExistente.setDescripcion(datosNuevos.getDescripcion());
         productoExistente.setProveedor(datosNuevos.getProveedor());
 
+        // COHERENCIA: Ahora actualizamos la imagen en la base de datos
+        productoExistente.setImagen(datosNuevos.getImagen());
+
         return repositorioProducto.save(productoExistente);
     }
 

@@ -13,12 +13,13 @@ public class MapeadorProducto {
     public static Producto aEntidad(DtoSolicitudProducto dto) {
         if (dto == null) return null;
         Producto producto = new Producto();
+        // Sincronizamos: 'nombre' del DTO -> 'nombreProducto' de la Entidad
         producto.setNombreProducto(dto.getNombre());
         producto.setPrecio(dto.getPrecio());
         producto.setCantidad(dto.getCantidad());
         producto.setDescripcion(dto.getDescripcion());
-        // La imagen se setea manualmente en el controlador tras la conversión si fuera necesario,
-        // o directamente si el DTO de solicitud ya la trae en Base64.
+        // CRÍTICO: El mapper ahora se encarga de la imagen Base64
+        producto.setImagen(dto.getImagen());
         return producto;
     }
 
@@ -26,35 +27,27 @@ public class MapeadorProducto {
         if (entidad == null) return null;
 
         String nombreProv = "Sin proveedor";
-
         if (entidad.getProveedor() != null) {
-            try {
-                if (entidad.getProveedor() instanceof Proveedor) {
-                    nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
-                } else {
-                    nombreProv = entidad.getProveedor().getNombre();
-                }
-            } catch (Exception e) {
-                nombreProv = "Error de carga";
+            if (entidad.getProveedor() instanceof Proveedor) {
+                nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
+            } else {
+                nombreProv = entidad.getProveedor().getNombre();
             }
         }
 
-        // Retornamos el DTO incluyendo el nuevo campo 'imagen'
         return new DtoRespuestaProducto(
-                entidad.getIdProducto(),
-                entidad.getNombreProducto(),
+                entidad.getIdProducto(), // El front recibe 'id'
+                entidad.getNombreProducto(), // El front recibe 'nombre'
                 entidad.getDescripcion(),
                 entidad.getPrecio(),
                 entidad.getCantidad(),
                 nombreProv,
-                entidad.getImagen() // <-- CRUCIAL: Pasamos el String Base64 al Frontend
+                entidad.getImagen()
         );
     }
 
     public static List<DtoRespuestaProducto> aListaDto(List<Producto> entidades) {
         if (entidades == null) return new ArrayList<>();
-        return entidades.stream()
-                .map(MapeadorProducto::aDto)
-                .collect(Collectors.toList());
+        return entidades.stream().map(MapeadorProducto::aDto).collect(Collectors.toList());
     }
 }
