@@ -1,9 +1,6 @@
 package com.valenci.controladores;
 
-import com.valenci.dto.DtoCambioContrasena;
-import com.valenci.dto.DtoPedidoHistorial;
-import com.valenci.dto.DtoRespuestaUsuario;
-import com.valenci.dto.DtoSolicitudActualizacionPerfil;
+import com.valenci.dto.*;
 import com.valenci.entidades.Cliente;
 import com.valenci.entidades.Usuario;
 import com.valenci.mapper.MapeadorPedido;
@@ -21,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -46,7 +44,6 @@ public class ControladorCuenta {
 
     @GetMapping("/perfil")
     public ResponseEntity<DtoRespuestaUsuario> verMiPerfil(@AuthenticationPrincipal Usuario usuarioAutenticado) {
-        if (usuarioAutenticado == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         return ResponseEntity.ok(MapeadorUsuario.aDtoRespuesta(usuarioAutenticado));
     }
 
@@ -59,41 +56,37 @@ public class ControladorCuenta {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         try {
-            usuario.setNombre(dto.getNombre().trim());
+            usuario.setNombre(dto.getNombre() != null ? dto.getNombre().trim() : usuario.getNombre());
+
             if (usuario instanceof Cliente cliente) {
                 cliente.setDireccionEnvio(dto.getDireccionEnvio());
             }
 
             Usuario guardado = repositorioUsuario.saveAndFlush(usuario);
+            log.info("Perfil actualizado: {}", guardado.getCorreo());
             return ResponseEntity.ok(MapeadorUsuario.aDtoRespuesta(guardado));
         } catch (Exception e) {
-            log.error("Error al actualizar perfil: {}", e.getMessage());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo actualizar el perfil.");
-        }
-    }
-
-    @PutMapping("/cambiar-contrasena")
-    public ResponseEntity<Void> cambiarMiContrasena(
-            @AuthenticationPrincipal Usuario usuarioAutenticado,
-            @Valid @RequestBody DtoCambioContrasena dto) {
-        try {
-            servicioUsuario.cambiarContrasena(usuarioAutenticado, dto.getContrasenaActual(), dto.getNuevaContrasena());
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            log.error("Error al actualizar perfil", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al guardar cambios");
         }
     }
 
     @GetMapping("/historial")
-    @PreAuthorize("hasAuthority('CLIENTE')")
+    // Permitimos acceso a cualquier usuario autenticado (Cliente o Admin)
     public ResponseEntity<List<DtoPedidoHistorial>> verMiHistorial(@AuthenticationPrincipal Usuario usuarioAutenticado) {
-        log.info("Cargando historial para el cliente: {}", usuarioAutenticado.getId());
+        if (usuarioAutenticado == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        List<DtoPedidoHistorial> historial = servicioPedido.listarPorCliente(usuarioAutenticado.getId()).stream()
+        List<com.valenci.entidades.Pedido> pedidos = servicioPedido.listarPorCliente(usuarioAutenticado.getId());
+
+        if (pedidos == null || pedidos.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        List<DtoPedidoHistorial> historial = pedidos.stream()
                 .map(pedido -> {
-                    // Buscamos la factura de forma segura
                     var factura = servicioFactura.buscarPorIdPedido(pedido.getIdPedido()).orElse(null);
-                    // El mapeador ahora maneja correctamente si la factura es null
                     return MapeadorPedido.aDtoHistorial(pedido, factura);
                 })
                 .collect(Collectors.toList());
