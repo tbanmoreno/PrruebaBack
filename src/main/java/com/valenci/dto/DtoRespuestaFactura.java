@@ -13,6 +13,5 @@ public class DtoRespuestaFactura {
     private String correoCliente;
     private BigDecimal total;
     private BigDecimal iva;
-    private List<DtoRespuestaDetallePedido> detalles; // Reutilizamos el DTO de detalles
+    private List<DtoRespuestaDetallePedido> detalles; // Crucial para el renderizado [cite: 73]
 }
-
