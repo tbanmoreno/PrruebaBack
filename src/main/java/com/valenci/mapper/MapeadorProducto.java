@@ -13,12 +13,11 @@ public class MapeadorProducto {
     public static Producto aEntidad(DtoSolicitudProducto dto) {
         if (dto == null) return null;
         Producto producto = new Producto();
-        // Sincronizamos: 'nombre' del DTO -> 'nombreProducto' de la Entidad
+        // Sincronización de nombres: dto.nombre -> entidad.nombreProducto
         producto.setNombreProducto(dto.getNombre());
         producto.setPrecio(dto.getPrecio());
         producto.setCantidad(dto.getCantidad());
         producto.setDescripcion(dto.getDescripcion());
-        // CRÍTICO: El mapper ahora se encarga de la imagen Base64
         producto.setImagen(dto.getImagen());
         return producto;
     }
@@ -27,17 +26,26 @@ public class MapeadorProducto {
         if (entidad == null) return null;
 
         String nombreProv = "Sin proveedor";
+
+        // Blindaje contra NullPointerException y ClassCastException
         if (entidad.getProveedor() != null) {
-            if (entidad.getProveedor() instanceof Proveedor) {
-                nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
-            } else {
-                nombreProv = entidad.getProveedor().getNombre();
+            try {
+                if (entidad.getProveedor() instanceof Proveedor) {
+                    nombreProv = ((Proveedor) entidad.getProveedor()).getNombreEmpresa();
+                } else {
+                    // Si el usuario existe pero no es entidad Proveedor, usamos su nombre base
+                    nombreProv = entidad.getProveedor().getNombre() != null
+                            ? entidad.getProveedor().getNombre()
+                            : "Usuario sin nombre";
+                }
+            } catch (Exception e) {
+                nombreProv = "Error en datos de proveedor";
             }
         }
 
         return new DtoRespuestaProducto(
-                entidad.getIdProducto(), // El front recibe 'id'
-                entidad.getNombreProducto(), // El front recibe 'nombre'
+                entidad.getIdProducto(),
+                entidad.getNombreProducto() != null ? entidad.getNombreProducto() : "Producto sin nombre",
                 entidad.getDescripcion(),
                 entidad.getPrecio(),
                 entidad.getCantidad(),
@@ -48,6 +56,8 @@ public class MapeadorProducto {
 
     public static List<DtoRespuestaProducto> aListaDto(List<Producto> entidades) {
         if (entidades == null) return new ArrayList<>();
-        return entidades.stream().map(MapeadorProducto::aDto).collect(Collectors.toList());
+        return entidades.stream()
+                .map(MapeadorProducto::aDto)
+                .collect(Collectors.toList());
     }
 }
