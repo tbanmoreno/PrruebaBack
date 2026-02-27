@@ -1,7 +1,7 @@
 package com.valenci.controladores;
 
 import com.valenci.dto.DtoRespuestaFactura;
-import com.valenci.mapper.MapeadorPedido; // <--- IMPORTANTE: Usamos este mapeador
+import com.valenci.mapper.MapeadorPedido;
 import com.valenci.servicios.ServicioFactura;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,6 @@ public class ControladorFactura {
     @GetMapping("/pedido/{idPedido}")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<DtoRespuestaFactura> obtenerPorIdPedido(@PathVariable int idPedido) {
-        // El Error 500 suele ocurrir aquí por datos nulos o mapeadores incorrectos
         return servicioFactura.buscarPorIdPedido(idPedido)
                 .map(factura -> {
                     try {
@@ -40,9 +39,13 @@ public class ControladorFactura {
     @GetMapping
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<List<DtoRespuestaFactura>> listarTodas() {
-        List<DtoRespuestaFactura> respuesta = servicioFactura.listarTodas().stream()
-                .map(MapeadorPedido::aDtoFactura)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(respuesta);
+        try {
+            List<DtoRespuestaFactura> respuesta = servicioFactura.listarTodas().stream()
+                    .map(MapeadorPedido::aDtoFactura)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(respuesta);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al procesar el listado de facturas");
+        }
     }
 }
