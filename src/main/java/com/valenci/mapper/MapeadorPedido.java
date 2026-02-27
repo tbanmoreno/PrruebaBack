@@ -11,45 +11,57 @@ public class MapeadorPedido {
 
     public static DtoRespuestaPedido aDtoRespuesta(Pedido pedido) {
         if (pedido == null) return null;
-
         DtoRespuestaPedido dto = new DtoRespuestaPedido();
         dto.setIdPedido(pedido.getIdPedido());
         dto.setFechaPedido(pedido.getFechaPedido() != null ? pedido.getFechaPedido() : LocalDateTime.now());
         dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name() : "PENDIENTE");
         dto.setTotalPedido(pedido.getTotalPedido() != null ? pedido.getTotalPedido() : BigDecimal.ZERO);
-
-        if (pedido.getCliente() != null) {
-            dto.setNombreCliente(pedido.getCliente().getNombre());
-        } else {
-            dto.setNombreCliente("Usuario Valenci");
-        }
+        dto.setNombreCliente(pedido.getCliente() != null ? pedido.getCliente().getNombre() : "Usuario Valenci");
 
         dto.setDetalles(pedido.getDetalles() != null ?
                 pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
                 new ArrayList<>());
-
         return dto;
     }
 
     public static DtoRespuestaDetallePedido aDtoRespuestaDetalle(DetallePedido detalle) {
         if (detalle == null) return null;
-
         DtoRespuestaDetallePedido dto = new DtoRespuestaDetallePedido();
         if (detalle.getProducto() != null) {
             dto.setNombreProducto(detalle.getProducto().getNombreProducto());
         } else {
-            dto.setNombreProducto("Producto No Identificado");
+            dto.setNombreProducto("Producto Valenci");
         }
-
         dto.setCantidad(detalle.getCantidad());
         dto.setPrecioUnitario(detalle.getPrecioUnitario() != null ? detalle.getPrecioUnitario() : BigDecimal.ZERO);
         dto.setSubtotal(detalle.getSubtotal() != null ? detalle.getSubtotal() : BigDecimal.ZERO);
         return dto;
     }
 
+    // MÉTODO CLAVE: Une Factura con los datos del Pedido y Cliente
+    public static DtoRespuestaFactura aDtoFactura(Factura factura) {
+        if (factura == null) return null;
+        DtoRespuestaFactura dto = new DtoRespuestaFactura();
+        dto.setIdFactura(factura.getIdFactura());
+        dto.setFecha(factura.getFechaFactura() != null ? factura.getFechaFactura() : LocalDateTime.now());
+        dto.setTotal(factura.getTotalFactura() != null ? factura.getTotalFactura() : BigDecimal.ZERO);
+        dto.setIva(factura.getIva() != null ? factura.getIva() : BigDecimal.ZERO);
+
+        if (factura.getPedido() != null) {
+            Pedido p = factura.getPedido();
+            if (p.getCliente() != null) {
+                dto.setNombreCliente(p.getCliente().getNombre());
+                dto.setCorreoCliente(p.getCliente().getCorreo());
+            }
+            dto.setDetalles(p.getDetalles() != null ?
+                    p.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
+                    new ArrayList<>());
+        }
+        return dto;
+    }
+
     public static DtoPedidoHistorial aDtoHistorial(Pedido pedido, Factura factura) {
         if (pedido == null) return null;
-
         DtoPedidoHistorial dto = new DtoPedidoHistorial();
         dto.setIdPedido(pedido.getIdPedido());
         dto.setFechaPedido(pedido.getFechaPedido() != null ? pedido.getFechaPedido() : LocalDateTime.now());
@@ -57,7 +69,6 @@ public class MapeadorPedido {
         dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name() : "PENDIENTE");
 
         if (factura != null) {
-            // Usamos el constructor básico y luego inyectamos los campos de Frontend
             DtoResumenFactura res = new DtoResumenFactura(
                     factura.getIdFactura(),
                     factura.getFechaFactura() != null ? factura.getFechaFactura() : LocalDateTime.now(),
@@ -73,14 +84,12 @@ public class MapeadorPedido {
             res.setDetalles(pedido.getDetalles() != null ?
                     pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
                     new ArrayList<>());
-
             dto.setFactura(res);
         }
 
         dto.setDetalles(pedido.getDetalles() != null ?
                 pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
                 new ArrayList<>());
-
         return dto;
     }
 }

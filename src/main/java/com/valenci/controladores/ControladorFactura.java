@@ -1,7 +1,7 @@
 package com.valenci.controladores;
 
 import com.valenci.dto.DtoRespuestaFactura;
-import com.valenci.mapper.MapeadorFactura;
+import com.valenci.mapper.MapeadorPedido; // Usamos el mapeador unificado
 import com.valenci.servicios.ServicioFactura;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/facturas")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*") // Cambiado a * para facilitar pruebas en desarrollo
 public class ControladorFactura {
 
     private final ServicioFactura servicioFactura;
@@ -25,7 +25,7 @@ public class ControladorFactura {
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<List<DtoRespuestaFactura>> listarTodas() {
         List<DtoRespuestaFactura> respuesta = servicioFactura.listarTodas().stream()
-                .map(MapeadorFactura::aDto)
+                .map(MapeadorPedido::aDtoFactura) // Cambio a MapeadorPedido
                 .collect(Collectors.toList());
         return ResponseEntity.ok(respuesta);
     }
@@ -34,18 +34,16 @@ public class ControladorFactura {
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<DtoRespuestaFactura> obtenerPorId(@PathVariable int id) {
         return servicioFactura.buscarPorId(id)
-                .map(MapeadorFactura::aDto)
+                .map(MapeadorPedido::aDtoFactura)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Factura no encontrada"));
     }
 
-    // --- NUEVO MÉTODO PARA SOLUCIONAR EL ERROR 404 EN GESTIÓN DE PEDIDOS ---
     @GetMapping("/pedido/{idPedido}")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
     public ResponseEntity<DtoRespuestaFactura> obtenerPorIdPedido(@PathVariable int idPedido) {
-        // Buscamos la factura asociada al ID del pedido
         return servicioFactura.buscarPorIdPedido(idPedido)
-                .map(MapeadorFactura::aDto)
+                .map(MapeadorPedido::aDtoFactura)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No existe factura para este pedido"));
     }
