@@ -56,8 +56,6 @@ public class ServicioPedidoImpl implements ServicioPedido {
 
                 productoEnDB.setCantidad(productoEnDB.getCantidad() - detalle.getCantidad());
                 repositorioProducto.save(productoEnDB);
-
-                // Crucial para @JsonManagedReference y coherencia JPA
                 detalle.setPedido(pedido);
             }
         }
@@ -86,7 +84,6 @@ public class ServicioPedidoImpl implements ServicioPedido {
         nuevoPago.setMetodoPago(metodoPago);
         repositorioPago.save(nuevoPago);
 
-        // Al registrar pago desde el cliente, se actualiza estado y se crea factura
         actualizarEstado(idPedido, EstadoPedido.PAGADO);
     }
 
@@ -105,81 +102,52 @@ public class ServicioPedidoImpl implements ServicioPedido {
 
         pedido.setEstadoPedido(nuevoEstado);
         repositorioPedido.save(pedido);
-        log.info("Pedido ID {} cambió de {} a {}", idPedido, estadoActual, nuevoEstado);
+        log.info("Pedido ID {} cambió a {}", idPedido, nuevoEstado);
 
-        // MEJORA: Si el administrador cambia el estado a PAGADO, generamos la factura automáticamente
-        // Esto soluciona el error 404 en el Frontend al intentar descargar facturas de pedidos gestionados por el admin
+        // BLINDAJE: Si falla la factura, el estado del pedido ya quedó guardado
         if (nuevoEstado == EstadoPedido.PAGADO) {
-            log.info("Generando factura automática para pedido ID: {}", idPedido);
-            servicioFactura.crearFacturaParaPedido(pedido);
+            try {
+                servicioFactura.crearFacturaParaPedido(pedido);
+                log.info("Factura generada exitosamente para pedido {}", idPedido);
+            } catch (Exception e) {
+                log.error("Error NO CRÍTICO al generar factura para pedido {}: {}", idPedido, e.getMessage());
+            }
         }
     }
 
-    @Override
-    @Transactional
+    @Override @Transactional
     public void cancelar(int idPedido) {
         Pedido pedido = repositorioPedido.findById(idPedido)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido no encontrado ID: " + idPedido));
-
-        if (pedido.getEstadoPedido() == EstadoPedido.CANCELADO) {
-            throw new IllegalStateException("El pedido ya se encuentra cancelado.");
-        }
-
-        if (pedido.getEstadoPedido() == EstadoPedido.ENTREGADO) {
-            throw new IllegalStateException("No se puede cancelar un pedido que ya ha sido entregado al cliente.");
-        }
+        if (pedido.getEstadoPedido() == EstadoPedido.CANCELADO) throw new IllegalStateException("Ya cancelado.");
 
         pedido.setEstadoPedido(EstadoPedido.CANCELADO);
-
-        for (DetallePedido detalle : pedido.getDetalles()) {
-            Producto p = detalle.getProducto();
-            p.setCantidad(p.getCantidad() + detalle.getCantidad());
+        pedido.getDetalles().forEach(det -> {
+            Producto p = det.getProducto();
+            p.setCantidad(p.getCantidad() + det.getCantidad());
             repositorioProducto.save(p);
-        }
-
+        });
         repositorioPedido.save(pedido);
-        log.info("Pedido ID {} cancelado exitosamente. Stock devuelto al inventario.", idPedido);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Pedido> buscarPorId(int idPedido) {
-        return repositorioPedido.findById(idPedido);
-    }
+    @Override @Transactional(readOnly = true)
+    public Optional<Pedido> buscarPorId(int idPedido) { return repositorioPedido.findById(idPedido); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Pedido> listarPorCliente(int idCliente) {
-        return repositorioPedido.findAllByClienteIdWithDetalles(idCliente);
-    }
+    @Override @Transactional(readOnly = true)
+    public List<Pedido> listarTodos() { return repositorioPedido.findAll(); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Pedido> listarTodos() {
-        return repositorioPedido.findAll();
-    }
+    @Override @Transactional(readOnly = true)
+    public List<Pedido> listarPorCliente(int idCliente) { return repositorioPedido.findAllByClienteIdWithDetalles(idCliente); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Pedido> listarPorEstado(EstadoPedido estado) {
-        return repositorioPedido.findByEstadoPedido(estado);
-    }
+    @Override @Transactional(readOnly = true)
+    public List<Pedido> listarPorEstado(EstadoPedido estado) { return repositorioPedido.findByEstadoPedido(estado); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Pedido> listarPorFecha(LocalDate fecha) {
-        return repositorioPedido.findByFecha(fecha);
-    }
+    @Override @Transactional(readOnly = true)
+    public List<Pedido> listarPorFecha(LocalDate fecha) { return repositorioPedido.findByFecha(fecha); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Pedido> listarPorProducto(int idProducto) {
-        return repositorioPedido.findByProductoId(idProducto);
-    }
+    @Override @Transactional(readOnly = true)
+    public List<Pedido> listarPorProducto(int idProducto) { return repositorioPedido.findByProductoId(idProducto); }
 
-    @Override
-    @Transactional(readOnly = true)
-    public DtoReporteVentas obtenerReporteGeneral() {
-        return repositorioPedido.obtenerResumenVentas();
-    }
+    @Override @Transactional(readOnly = true)
+    public DtoReporteVentas obtenerReporteGeneral() { return repositorioPedido.obtenerResumenVentas(); }
 }

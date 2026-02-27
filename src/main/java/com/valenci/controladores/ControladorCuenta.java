@@ -46,6 +46,7 @@ public class ControladorCuenta {
 
     @GetMapping("/perfil")
     public ResponseEntity<DtoRespuestaUsuario> verMiPerfil(@AuthenticationPrincipal Usuario usuarioAutenticado) {
+        if (usuarioAutenticado == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         return ResponseEntity.ok(MapeadorUsuario.aDtoRespuesta(usuarioAutenticado));
     }
 
@@ -64,11 +65,10 @@ public class ControladorCuenta {
             }
 
             Usuario guardado = repositorioUsuario.saveAndFlush(usuario);
-            log.info("Perfil actualizado para: {}", guardado.getCorreo());
-
             return ResponseEntity.ok(MapeadorUsuario.aDtoRespuesta(guardado));
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error al actualizar perfil");
+            log.error("Error al actualizar perfil: {}", e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo actualizar el perfil.");
         }
     }
 
@@ -87,12 +87,17 @@ public class ControladorCuenta {
     @GetMapping("/historial")
     @PreAuthorize("hasAuthority('CLIENTE')")
     public ResponseEntity<List<DtoPedidoHistorial>> verMiHistorial(@AuthenticationPrincipal Usuario usuarioAutenticado) {
+        log.info("Cargando historial para el cliente: {}", usuarioAutenticado.getId());
+
         List<DtoPedidoHistorial> historial = servicioPedido.listarPorCliente(usuarioAutenticado.getId()).stream()
                 .map(pedido -> {
+                    // Buscamos la factura de forma segura
                     var factura = servicioFactura.buscarPorIdPedido(pedido.getIdPedido()).orElse(null);
+                    // El mapeador ahora maneja correctamente si la factura es null
                     return MapeadorPedido.aDtoHistorial(pedido, factura);
                 })
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(historial);
     }
 }

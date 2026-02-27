@@ -64,11 +64,11 @@ public class ServicioFacturaImp implements ServicioFactura {
     @Override
     @Transactional(readOnly = true)
     public Optional<Factura> buscarPorIdPedido(int idPedido) {
-        // Aseguramos que la consulta no falle si el ID de pedido no existe
         try {
+            // Buscamos la factura asociada al ID del pedido
             return repositorioFactura.findByPedidoIdPedido(idPedido);
         } catch (Exception e) {
-            log.warn("No se pudo recuperar factura para el pedido: {}", idPedido);
+            log.error("Error al buscar factura para el pedido {}: {}", idPedido, e.getMessage());
             return Optional.empty();
         }
     }

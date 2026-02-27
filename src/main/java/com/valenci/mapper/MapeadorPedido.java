@@ -14,12 +14,18 @@ public class MapeadorPedido {
         DtoRespuestaPedido dto = new DtoRespuestaPedido();
         dto.setIdPedido(pedido.getIdPedido());
         dto.setFechaPedido(pedido.getFechaPedido() != null ? pedido.getFechaPedido() : LocalDateTime.now());
-        dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name() : "PENDIENTE");
+
+        // .trim() para limpiar espacios como "PAGADO " que bloquean el Frontend
+        dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name().trim() : "PENDIENTE");
+
         dto.setTotalPedido(pedido.getTotalPedido() != null ? pedido.getTotalPedido() : BigDecimal.ZERO);
         dto.setNombreCliente(pedido.getCliente() != null ? pedido.getCliente().getNombre() : "Usuario Valenci");
 
         dto.setDetalles(pedido.getDetalles() != null ?
-                pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
+                pedido.getDetalles().stream()
+                        .filter(d -> d != null)
+                        .map(MapeadorPedido::aDtoRespuestaDetalle)
+                        .collect(Collectors.toList()) :
                 new ArrayList<>());
         return dto;
     }
@@ -38,7 +44,6 @@ public class MapeadorPedido {
         return dto;
     }
 
-    // MÉTODO CLAVE: Une Factura con los datos del Pedido y Cliente
     public static DtoRespuestaFactura aDtoFactura(Factura factura) {
         if (factura == null) return null;
 
@@ -47,27 +52,18 @@ public class MapeadorPedido {
         dto.setFecha(factura.getFechaFactura() != null ? factura.getFechaFactura() : LocalDateTime.now());
         dto.setTotal(factura.getTotalFactura() != null ? factura.getTotalFactura() : BigDecimal.ZERO);
         dto.setIva(factura.getIva() != null ? factura.getIva() : BigDecimal.ZERO);
+        dto.setDetalles(new ArrayList<>());
 
-        // Si hay pedido, extraemos la información del cliente y los productos
         if (factura.getPedido() != null) {
             Pedido p = factura.getPedido();
+            dto.setNombreCliente(p.getCliente() != null ? p.getCliente().getNombre() : "Cliente Valenci");
+            dto.setCorreoCliente(p.getCliente() != null ? p.getCliente().getCorreo() : "contacto@valenci.com");
 
-            // Datos del Cliente
-            if (p.getCliente() != null) {
-                dto.setNombreCliente(p.getCliente().getNombre());
-                dto.setCorreoCliente(p.getCliente().getCorreo());
-            } else {
-                dto.setNombreCliente("Cliente Valenci");
-                dto.setCorreoCliente("contacto@valenci.com");
-            }
-
-            // Datos de los Productos (Detalles)
-            if (p.getDetalles() != null && !p.getDetalles().isEmpty()) {
+            if (p.getDetalles() != null) {
                 dto.setDetalles(p.getDetalles().stream()
+                        .filter(d -> d != null)
                         .map(MapeadorPedido::aDtoRespuestaDetalle)
                         .collect(Collectors.toList()));
-            } else {
-                dto.setDetalles(new ArrayList<>());
             }
         }
         return dto;
@@ -75,12 +71,23 @@ public class MapeadorPedido {
 
     public static DtoPedidoHistorial aDtoHistorial(Pedido pedido, Factura factura) {
         if (pedido == null) return null;
+
         DtoPedidoHistorial dto = new DtoPedidoHistorial();
         dto.setIdPedido(pedido.getIdPedido());
         dto.setFechaPedido(pedido.getFechaPedido() != null ? pedido.getFechaPedido() : LocalDateTime.now());
         dto.setTotalPedido(pedido.getTotalPedido() != null ? pedido.getTotalPedido() : BigDecimal.ZERO);
-        dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name() : "PENDIENTE");
+        // Limpieza de espacios para el frontend
+        dto.setEstadoPedido(pedido.getEstadoPedido() != null ? pedido.getEstadoPedido().name().trim() : "PENDIENTE");
 
+        // Detalles del pedido (siempre presentes)
+        dto.setDetalles(pedido.getDetalles() != null ?
+                pedido.getDetalles().stream()
+                        .filter(d -> d != null)
+                        .map(MapeadorPedido::aDtoRespuestaDetalle)
+                        .collect(Collectors.toList()) :
+                new ArrayList<>());
+
+        // Datos de Factura (solo si existe)
         if (factura != null) {
             DtoResumenFactura res = new DtoResumenFactura(
                     factura.getIdFactura(),
@@ -94,15 +101,11 @@ public class MapeadorPedido {
                 res.setCorreoCliente(pedido.getCliente().getCorreo());
             }
 
-            res.setDetalles(pedido.getDetalles() != null ?
-                    pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
-                    new ArrayList<>());
+            // La factura también lleva sus detalles
+            res.setDetalles(dto.getDetalles());
             dto.setFactura(res);
         }
 
-        dto.setDetalles(pedido.getDetalles() != null ?
-                pedido.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
-                new ArrayList<>());
         return dto;
     }
 }
