@@ -41,21 +41,34 @@ public class MapeadorPedido {
     // MÉTODO CLAVE: Une Factura con los datos del Pedido y Cliente
     public static DtoRespuestaFactura aDtoFactura(Factura factura) {
         if (factura == null) return null;
+
         DtoRespuestaFactura dto = new DtoRespuestaFactura();
         dto.setIdFactura(factura.getIdFactura());
         dto.setFecha(factura.getFechaFactura() != null ? factura.getFechaFactura() : LocalDateTime.now());
         dto.setTotal(factura.getTotalFactura() != null ? factura.getTotalFactura() : BigDecimal.ZERO);
         dto.setIva(factura.getIva() != null ? factura.getIva() : BigDecimal.ZERO);
 
+        // Si hay pedido, extraemos la información del cliente y los productos
         if (factura.getPedido() != null) {
             Pedido p = factura.getPedido();
+
+            // Datos del Cliente
             if (p.getCliente() != null) {
                 dto.setNombreCliente(p.getCliente().getNombre());
                 dto.setCorreoCliente(p.getCliente().getCorreo());
+            } else {
+                dto.setNombreCliente("Cliente Valenci");
+                dto.setCorreoCliente("contacto@valenci.com");
             }
-            dto.setDetalles(p.getDetalles() != null ?
-                    p.getDetalles().stream().map(MapeadorPedido::aDtoRespuestaDetalle).collect(Collectors.toList()) :
-                    new ArrayList<>());
+
+            // Datos de los Productos (Detalles)
+            if (p.getDetalles() != null && !p.getDetalles().isEmpty()) {
+                dto.setDetalles(p.getDetalles().stream()
+                        .map(MapeadorPedido::aDtoRespuestaDetalle)
+                        .collect(Collectors.toList()));
+            } else {
+                dto.setDetalles(new ArrayList<>());
+            }
         }
         return dto;
     }
