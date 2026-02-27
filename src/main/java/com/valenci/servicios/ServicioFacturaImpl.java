@@ -19,7 +19,7 @@ import java.util.Optional;
  */
 @Service
 @Slf4j
-public class ServicioFacturaImp implements ServicioFactura {
+public class ServicioFacturaImpl implements ServicioFactura {
 
     private final RepositorioFactura repositorioFactura;
 
@@ -27,7 +27,7 @@ public class ServicioFacturaImp implements ServicioFactura {
     @Value("${app.iva.tasa}")
     private BigDecimal tasaIva;
 
-    public ServicioFacturaImp(RepositorioFactura repositorioFactura) {
+    public ServicioFacturaImpl(RepositorioFactura repositorioFactura) {
         this.repositorioFactura = repositorioFactura;
     }
 
